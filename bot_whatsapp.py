@@ -11,6 +11,7 @@ from datetime import datetime
 
 # 2. CONFIGURAÇÕES E CONSTANTES GLOBAIS
 app = Flask(__name__)
+VERIFY_TOKEN = "007236Ti@"
 
 # -- Mensagens Iniciais e de Coleta de Dados --
 MENSAGEM_BEM_VINDO = "Bem vindo, Casa Padim agradece seu contato."
@@ -245,24 +246,38 @@ def processar_mensagem(mensagem_usuario, numero_usuario):
 # =======================================================
 # 6. ROTA E EXECUÇÃO DO FLASK
 # =======================================================
-@app.route('/webhook', methods=['POST'])
+@app.route('/webhook', methods=['POST' 'GET'])
 def webhook_whatsapp():
-    dados = request.get_json()
-    if dados and 'message' in dados:
-        mensagem_recebida = dados.get('message', '').strip()
-        numero_usuario = dados.get('sender_id', 'usuario_teste_123')
-        
-        print(f"Mensagem de '{numero_usuario}' recebida.")
-        
-        resposta_bot = processar_mensagem(mensagem_recebida, numero_usuario)
-        
-        print(f"Resposta do bot enviada.")
-        return resposta_bot
-    return "Formato de dados inválido", 400
+    if request.method == 'GET':
+        if request.args.get('hub.verify_token') == VERIFY_TOKEN:
+            return request.args.get('hub.challenge')
+        return 'Erro de verificação', 403
+
+    if request.method == 'POST':
+        dados = request.get.json()
+        if dados and dados.request('object') == 'whatsapp_business_account':
+            try:
+                mensagem = dados['entry'][0]['changes'][0]['value']['messages'][0]
+                numero_usuario = mensagem['from']
+                mensagem_recebida = mensagem['text']['body']
+
+                print(f"Mensagem recebida de {numero_usuario}: {mensagem_recebida}")
+
+                resposta_bot = processar_mensagem(mensagem_recebida, numero_usuario)
+
+                print(f"Resposta do bot: {resposta_bot}")
+
+                return 'OK', 200
+            
+            except (KeyError, IndexError) as e:
+                
+                pass
+
+    return 'OK', 200
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
-
+    
 # /agradecimento Casa Padim agradece seu contato, tenha um bom dia/uma boa tarde!
 # /encominhar Irei te encaminhar o contato do nosso representante que atende na sua região.
 # /aguarde Aguarde um momento que estarei iniciando seu atendimento!
