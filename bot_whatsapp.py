@@ -246,34 +246,51 @@ def processar_mensagem(mensagem_usuario, numero_usuario):
 # =======================================================
 # 6. ROTA E EXECUÇÃO DO FLASK
 # =======================================================
-@app.route('/webhook', methods=['POST' 'GET'])
+# =======================================================
+# 6. ROTA E EXECUÇÃO DO FLASK (VERSÃO CORRIGIDA)
+# =======================================================
+@app.route('/webhook', methods=['GET', 'POST']) # VÍRGULA ADICIONADA AQUI
 def webhook_whatsapp():
+    # --- Lógica de verificação do Webhook (para o GET) ---
     if request.method == 'GET':
         if request.args.get('hub.verify_token') == VERIFY_TOKEN:
             return request.args.get('hub.challenge')
         return 'Erro de verificação', 403
 
+    # --- Lógica de recebimento de mensagens (para o POST) ---
     if request.method == 'POST':
-        dados = request.get.json()
-        if dados and dados.request('object') == 'whatsapp_business_account':
+        dados = request.get_json() # CORRIGIDO DE .get.json() para .get_json()
+        
+        # A estrutura real da mensagem da Meta é um pouco mais complexa
+        # Este if garante que estamos processando uma notificação de mensagem do WhatsApp
+        if dados.get('object') and dados.get('entry'):
             try:
-                mensagem = dados['entry'][0]['changes'][0]['value']['messages'][0]
-                numero_usuario = mensagem['from']
-                mensagem_recebida = mensagem['text']['body']
-
-                print(f"Mensagem recebida de {numero_usuario}: {mensagem_recebida}")
-
-                resposta_bot = processar_mensagem(mensagem_recebida, numero_usuario)
-
-                print(f"Resposta do bot: {resposta_bot}")
-
-                return 'OK', 200
+                change = dados['entry'][0]['changes'][0]
+                if change.get('value') and change['value'].get('messages'):
+                    mensagem = change['value']['messages'][0]
+                    
+                    # Verifica se a mensagem é do tipo texto
+                    if mensagem.get('type') == 'text':
+                        numero_usuario = mensagem['from']
+                        mensagem_recebida = mensagem['text']['body']
+                        
+                        print(f"Mensagem de texto recebida de {numero_usuario}: '{mensagem_recebida}'")
+                        
+                        resposta_bot = processar_mensagem(mensagem_recebida, numero_usuario)
+                        
+                        print(f"Resposta do bot (simulada): {resposta_bot}")
+                        
+                        # EM UM BOT REAL, AQUI VOCÊ CHAMARIA A API PARA ENVIAR A RESPOSTA
+                        # Ex: enviar_mensagem_whatsapp(numero_usuario, resposta_bot)
             
-            except (KeyError, IndexError) as e:
-                
+            except (KeyError, IndexError):
+                # Ignora outros tipos de notificações ou formatos inesperados
                 pass
+        
+        # Sempre retorne 'OK', 200 para a Meta, para que ela saiba que você recebeu a notificação.
+        return 'OK', 200
 
-    return 'OK', 200
+    return 'Método não suportado', 405
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
