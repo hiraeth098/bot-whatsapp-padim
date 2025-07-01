@@ -8,10 +8,13 @@ from flask import Flask, request
 import sqlite3
 import json
 from datetime import datetime
+import requests
 
 # 2. CONFIGURAÇÕES E CONSTANTES GLOBAIS
 app = Flask(__name__)
 VERIFY_TOKEN = "007236Ti@"
+WHATSAPP_TOKEN = "token_aqui"
+PHONE_NUMBER_ID = "registro do número aqui"
 
 # -- Mensagens Iniciais e de Coleta de Dados --
 MENSAGEM_BEM_VINDO = "Bem vindo, Casa Padim agradece seu contato."
@@ -42,7 +45,7 @@ Entendido. Por favor, digite o número do setor que melhor representa sua demand
 \n5️⃣ Outros
 """
 
-# -- NÍVEL 3: Sub-menus de Setores (COM TEXTOS PROVISÓRIOS - EDITE AQUI!) --
+
 # Financeiro
 MENSAGEM_FINANCEIRO_SUBMENU = "Setor Financeiro. Em que podemos ajudar?\n1️⃣ Boletos\n2️⃣ Contatos"
 RESPOSTAS_FINANCEIRO_SUBMENU = {
@@ -68,9 +71,7 @@ RESPOSTAS_RH_SUBMENU = {
 RESPOSTA_OUTROS = "[RESPOSTA PROVISÓRIA] Entendi. Para outros assuntos, por favor, aguarde que um de nossos atendentes irá te ajudar."
 
 
-# =======================================================
-# 3. FUNÇÕES DE MEMÓRIA (Comunicação com o DB)
-# =======================================================
+
 def ler_estado(numero_usuario):
     """Lê o estado atual e os dados de um usuário no banco de dados."""
     try:
@@ -111,9 +112,7 @@ def apagar_estado(numero_usuario):
     except sqlite3.Error as e:
         print(f"Erro ao apagar estado: {e}")
 
-# =======================================================
-# 4. FUNÇÕES DE SUPORTE (Busca de Vendedor)
-# =======================================================
+
 def buscar_vendedor_por_cidade(cidade_cliente):
     """Busca vendedores no banco de dados pela cidade informada."""
     vendedores_encontrados = []
@@ -153,6 +152,30 @@ def formatar_resposta_vendedor(vendedores):
             resposta += f"📞 *Contato:* {vendedor['contato']}\n"
         resposta += "--------------------\n"
     return resposta
+
+def enviar_mensagem_whatsapp(numero_usuario, mensagem): # O parâmetro é 'numero_usuario'
+    """Envia a mensagem de resposta de volta para o usuário via API da Meta."""
+    url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "messaging_product": "whatsapp",
+        "to": numero_usuario,  # CORRIGIDO: Usando 'numero_usuario'
+        "text": { "body": mensagem }
+    }
+    try:
+        # CORRIGIDO: Nome da biblioteca é 'requests' e sem linha duplicada
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status() # Lança um erro se a requisição falhar
+        
+        # CORRIGIDO: Usando 'numero_usuario'
+        print(f"Mensagem enviada com sucesso para {numero_usuario}!")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao enviar mensagem: {e}")
+
 
 # =======================================================
 # 5. FUNÇÃO PRINCIPAL DE LÓGICA DO BOT (O CÉREBRO)
@@ -243,51 +266,37 @@ def processar_mensagem(mensagem_usuario, numero_usuario):
     return "Desculpe, não entendi. Vamos começar de novo."
 
 
-# =======================================================
-# 6. ROTA E EXECUÇÃO DO FLASK
-# =======================================================
-# =======================================================
-# 6. ROTA E EXECUÇÃO DO FLASK (VERSÃO CORRIGIDA)
-# =======================================================
-@app.route('/webhook', methods=['GET', 'POST']) # VÍRGULA ADICIONADA AQUI
+
+@app.route('/webhook', methods=['GET', 'POST'])
 def webhook_whatsapp():
-    # --- Lógica de verificação do Webhook (para o GET) ---
     if request.method == 'GET':
         if request.args.get('hub.verify_token') == VERIFY_TOKEN:
             return request.args.get('hub.challenge')
         return 'Erro de verificação', 403
 
-    # --- Lógica de recebimento de mensagens (para o POST) ---
     if request.method == 'POST':
-        dados = request.get_json() # CORRIGIDO DE .get.json() para .get_json()
-        
-        # A estrutura real da mensagem da Meta é um pouco mais complexa
-        # Este if garante que estamos processando uma notificação de mensagem do WhatsApp
-        if dados.get('object') and dados.get('entry'):
+        dados = request.get_json()
+        if dados and dados.get('object') == 'whatsapp_business_account':
             try:
-                change = dados['entry'][0]['changes'][0]
-                if change.get('value') and change['value'].get('messages'):
-                    mensagem = change['value']['messages'][0]
+                mudanca = dados['entry'][0]['changes'][0]
+                if mudanca['field'] == 'messages':
+                    mensagem = mudanca['value']['messages'][0]
+                    numero_usuario = mensagem['from']
+                    mensagem_recebida = mensagem['text']['body']
                     
-                    # Verifica se a mensagem é do tipo texto
-                    if mensagem.get('type') == 'text':
-                        numero_usuario = mensagem['from']
-                        mensagem_recebida = mensagem['text']['body']
-                        
-                        print(f"Mensagem de texto recebida de {numero_usuario}: '{mensagem_recebida}'")
-                        
-                        resposta_bot = processar_mensagem(mensagem_recebida, numero_usuario)
-                        
-                        print(f"Resposta do bot (simulada): {resposta_bot}")
-                        
-                        # EM UM BOT REAL, AQUI VOCÊ CHAMARIA A API PARA ENVIAR A RESPOSTA
-                        # Ex: enviar_mensagem_whatsapp(numero_usuario, resposta_bot)
-            
+                    print(f"Mensagem de '{numero_usuario}': '{mensagem_recebida}'")
+                    
+                    resposta_bot = processar_mensagem(mensagem_recebida, numero_usuario)
+                    
+                    print(f"Resposta do bot: {resposta_bot}")
+
+                    # AQUI ESTÁ A "BOCA" DO BOT!
+                    if resposta_bot:
+                        enviar_mensagem_whatsapp(numero_usuario, resposta_bot)
+
             except (KeyError, IndexError):
-                # Ignora outros tipos de notificações ou formatos inesperados
                 pass
         
-        # Sempre retorne 'OK', 200 para a Meta, para que ela saiba que você recebeu a notificação.
         return 'OK', 200
 
     return 'Método não suportado', 405
