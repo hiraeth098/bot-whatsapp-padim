@@ -13,8 +13,8 @@ import requests
 # 2. CONFIGURAÇÕES E CONSTANTES GLOBAIS
 app = Flask(__name__)
 VERIFY_TOKEN = "007236Ti@"
-WHATSAPP_TOKEN = "token_aqui"
-PHONE_NUMBER_ID = "registro do número aqui"
+WHATSAPP_TOKEN = "EAAIjUsmUGtMBO034G1HyAZAcvxYqwHuJpSeYX7rYTqhFqYYWeJMc8lznzkuhyWK1pC34AqrYgUYRpcd9PBhXtZB2YpbaQ6BLtqGZBflh5QDSZBvhXli8ManHnDW1vb2AE6KtZAZCIXqPEywNb5B5JkjcWt8YXOYYvQclludiZCcSrWcmq1kGXC9rQAZAis1ZCZCsNiOrWjZCmnd6H24uUZCK9qN2MbjzmNVLAeiQ2PKTgqrDFQZDZD"
+PHONE_NUMBER_ID = "728628760326630"
 
 # -- Mensagens Iniciais e de Coleta de Dados --
 MENSAGEM_BEM_VINDO = "Bem vindo, Casa Padim agradece seu contato."
