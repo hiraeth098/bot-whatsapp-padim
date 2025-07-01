@@ -9,12 +9,13 @@ import sqlite3
 import json
 from datetime import datetime
 import requests
+import os
 
 # 2. CONFIGURAÇÕES E CONSTANTES GLOBAIS
 app = Flask(__name__)
-VERIFY_TOKEN = "007236Ti@"
-WHATSAPP_TOKEN = "EAAIjUsmUGtMBOZBqnbf4jurqAfVynRSSinQXKPkgy8iaUZCZBYmyRKZAyToa8bBoEyykh084NZANQyha5xR2CvOg0vZAlZBbTB0nDDH2rm6Rq9t9BeneINZAXwMBNlY5NJUGlRcEfCBjozcPE8eUAUcx0yg5V7SZCUdqUiqFHXdfHjbQrEZC9CK3CDLjyomnF7JroFjE3I2gn3S7yyXAOwEwif6M79LiEziiDTdOTT8EaZCurUZD"
-PHONE_NUMBER_ID = "728628760326630"
+VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
+WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
+PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
 # -- Mensagens Iniciais e de Coleta de Dados --
 MENSAGEM_BEM_VINDO = "Bem vindo, Casa Padim agradece seu contato."
