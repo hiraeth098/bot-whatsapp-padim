@@ -161,7 +161,7 @@ def enviar_mensagem_whatsapp(numero_usuario, mensagem): # O parâmetro é 'numer
     """Envia a mensagem de resposta de volta para o usuário via API da Meta."""
     url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
     headers = {
-        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Authorization": "Bearer " + WHATSAPP_TOKEN,
         "Content-Type": "application/json"
     }
     data = {
