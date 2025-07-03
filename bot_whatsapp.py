@@ -1,7 +1,3 @@
-# =======================================================
-# BOT DE ATENDIMENTO V5.0 - por Parceiro de Programação
-# Com Memória Persistente em Banco de Dados SQLite
-# =======================================================
 
 # 1. IMPORTAÇÕES
 from flask import Flask, request
@@ -13,6 +9,13 @@ import os
 
 # 2. CONFIGURAÇÕES E CONSTANTES GLOBAIS
 app = Flask(__name__)
+
+print("--- VERIFICANDO VARIÁVEIS DE AMBIENTE ---")
+print(f"PHONE_NUMBER_ID carregado: {os.environ.get('PHONE_NUMBER_ID')}")
+print(f"VERIFY_TOKEN carregado: {os.environ.get('VERIFY_TOKEN')}")
+print(f"WHATSAPP_TOKEN carregado: {os.environ.get('WHATSAPP_TOKEN')}")
+print("-----------------------------------------")
+
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
