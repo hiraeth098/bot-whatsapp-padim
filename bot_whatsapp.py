@@ -157,24 +157,36 @@ def formatar_resposta_vendedor(vendedores):
         resposta += "--------------------\n"
     return resposta
 
-def enviar_mensagem_whatsapp(numero_usuario, mensagem): # O parâmetro é 'numero_usuario'
-    """Envia a mensagem de resposta de volta para o usuário via API da Meta."""
-    url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
+def enviar_mensagem_whatsapp(numero_usuario, mensagem):
+
+    
+    # Pega as credenciais do ambiente
+    token = os.environ.get("WHATSAPP_TOKEN")
+    phone_id = os.environ.get("PHONE_NUMBER_ID")
+
+    # Verificação de segurança para garantir que as variáveis foram carregadas
+    if not token or not phone_id:
+        print("ERRO CRÍTICO: Token ou Phone Number ID não encontrados nas variáveis de ambiente.")
+        return
+
+    url = f"https://graph.facebook.com/v20.0/{phone_id}/messages"
+    
     headers = {
-        "Authorization": "Bearer " + WHATSAPP_TOKEN,
+        # A MÁGICA ESTÁ AQUI: .strip() remove espaços/quebras de linha invisíveis
+        "Authorization": "Bearer " + token.strip(),
         "Content-Type": "application/json"
     }
+    
     data = {
         "messaging_product": "whatsapp",
-        "to": numero_usuario,  # CORRIGIDO: Usando 'numero_usuario'
+        "to": numero_usuario,
         "text": { "body": mensagem }
     }
+    
     try:
-        # CORRIGIDO: Nome da biblioteca é 'requests' e sem linha duplicada
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status() # Lança um erro se a requisição falhar
-        
-        # CORRIGIDO: Usando 'numero_usuario'
+        # Lança um erro se a requisição falhar (status code 4xx ou 5xx)
+        response.raise_for_status() 
         print(f"Mensagem enviada com sucesso para {numero_usuario}!")
 
     except requests.exceptions.RequestException as e:
